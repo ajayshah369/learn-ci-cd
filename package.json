@@ -1,0 +1,46 @@
+{
+  "name": "learn-ci-cd",
+  "version": "1.0.0",
+  "description": "A small Express + TypeScript API used to practise building a CI/CD pipeline.",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "jest --runInBand",
+    "test:ci": "jest --runInBand --ci --coverage"
+  },
+  "keywords": [
+    "express",
+    "typescript",
+    "ci-cd"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.9.0",
+    "@types/supertest": "^6.0.2",
+    "eslint": "^9.14.0",
+    "eslint-config-prettier": "^9.1.0",
+    "jest": "^29.7.0",
+    "prettier": "^3.3.3",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.13.0"
+  }
+}
