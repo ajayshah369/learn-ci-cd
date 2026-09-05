@@ -38,3 +38,38 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: coverage/
+          retention-days: 7
+
+  deploy:
+    name: Deploy (placeholder)
+    needs: quality
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Show what would be deployed
+        run: |
+          echo "Commit:  ${{ github.sha }}"
+          echo "Branch:  ${{ github.ref_name }}"
+          echo "By:      ${{ github.actor }}"
+          ls -R dist/
