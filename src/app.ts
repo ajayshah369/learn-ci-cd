@@ -15,7 +15,7 @@ export function createApp(): Application {
   app.get('/', (_req, res) => {
     res.json({
       name: 'learn-ci-cd',
-      message: 'Hello from server',
+      message: 'Hello from server, PR1',
       endpoints: ['/health', '/health/ready', '/api/todos'],
     });
   });
