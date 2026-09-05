@@ -79,7 +79,7 @@ jobs:
             docker stop api || true
             docker rm api || true
             docker run -d --name api \
-              -p 80:3000 \
+              -p 3000:3000 \
               --restart unless-stopped \
               -e NODE_ENV=production \
               -e GIT_COMMIT=${{ github.sha }} \
