@@ -6,5 +6,3 @@ export const config = {
   version: process.env.APP_VERSION ?? '1.0.0',
   commit: process.env.GIT_COMMIT ?? 'local',
 };
-
-export const broken: number = 'not a number';
