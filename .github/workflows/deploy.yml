@@ -2,7 +2,7 @@ name: Deploy
 
 on:
   push:
-    branches: [master]
+    branches: [master, development]
   workflow_dispatch:
 
 env:
@@ -10,8 +10,12 @@ env:
   ECR_REPOSITORY: learn-ci-cd
 
 permissions:
-  id-token: write # REQUIRED for OIDC — without it, no token is minted
+  id-token: write
   contents: read
+
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   quality:
@@ -34,6 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       image: ${{ steps.meta.outputs.image }}
+      registry: ${{ steps.ecr.outputs.registry }}
     steps:
       - uses: actions/checkout@v4
 
@@ -55,15 +60,14 @@ jobs:
 
       - name: Build and push
         run: |
-          docker build \
-            --build-arg GIT_COMMIT=${{ github.sha }} \
-            -t ${{ steps.meta.outputs.image }} .
+          docker build -t ${{ steps.meta.outputs.image }} .
           docker push ${{ steps.meta.outputs.image }}
 
   deploy:
-    name: Deploy to EC2
+    name: Deploy
     needs: build
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
     steps:
       - name: SSH in and swap the container
         uses: appleboy/ssh-action@v1
@@ -74,7 +78,7 @@ jobs:
           script: |
             set -e
             aws ecr get-login-password --region ${{ env.AWS_REGION }} \
-              | docker login --username AWS --password-stdin ${{ needs.build.outputs.image }}
+              | docker login --username AWS --password-stdin ${{ needs.build.outputs.registry }}
             docker pull ${{ needs.build.outputs.image }}
             docker stop api || true
             docker rm api || true
@@ -82,6 +86,7 @@ jobs:
               -p 80:3000 \
               --restart unless-stopped \
               -e NODE_ENV=production \
+              -e APP_ENV=${{ github.ref_name == 'master' && 'production' || 'development' }} \
               -e GIT_COMMIT=${{ github.sha }} \
               ${{ needs.build.outputs.image }}
             docker image prune -af --filter "until=168h"
@@ -90,11 +95,16 @@ jobs:
     name: Smoke test
     needs: [build, deploy]
     runs-on: ubuntu-latest
+    environment: ${{ github.ref_name == 'master' && 'production' || 'development' }}
     steps:
       - name: Check /health reports the new commit
         run: |
-          sleep 10
-          RESPONSE=$(curl -fsS http://${{ secrets.EC2_HOST }}/health)
-          echo "$RESPONSE"
-          echo "$RESPONSE" | grep -q "${{ github.sha }}" \
+          for i in $(seq 1 10); do
+            if curl -fsS "http://${{ secrets.EC2_HOST }}/health" > /tmp/health.json; then
+              break
+            fi
+            echo "attempt $i failed, retrying..."; sleep 3
+          done
+          cat /tmp/health.json
+          grep -q "${{ github.sha }}" /tmp/health.json \
             || (echo "Deployed commit does not match!" && exit 1)
